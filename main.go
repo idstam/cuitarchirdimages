@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -29,17 +31,20 @@ func init() {
 }
 func main() {
 
-	chord := "D:x,x,o,2,3,2"
-
-	dc := getEmptyDiagram()
-	if !strings.Contains(chord, ":") {
-		fmt.Println("Invalid chord " + chord)
-		return
+	chords, err := readLines("chords.txt")
+	if err != nil {
+		panic(err)
 	}
-	chordName := strings.Split(chord, ":")[0]
-	drawChord(dc, chord, chordName)
-	dc.SavePNG("out.png")
-
+	for _, chord := range chords {
+		dc := getEmptyDiagram()
+		if !strings.Contains(chord, ":") {
+			fmt.Println("Invalid chord " + chord)
+			return
+		}
+		chordName := strings.Split(chord, ":")[0]
+		drawChord(dc, chord, chordName)
+		dc.SavePNG("chordImages/" + chordName + ".png")
+	}
 }
 
 func drawChord(dc *gg.Context, chord, chordName string) {
@@ -102,6 +107,7 @@ func drawChordName(dc *gg.Context, chordName string) {
 	dc.DrawString(chordName, x, (nutY / 2))
 	dc.Fill()
 }
+
 func drawPressedString(dc *gg.Context, stringNumber, fretHeight float64, fretNumber int) {
 	x := firstString + (stringNumber * stringSpacing) + 1
 	y := (fretHeight * float64(fretNumber)) - (fretHeight / 2)
@@ -152,4 +158,22 @@ func getEmptyDiagram() *gg.Context {
 	}
 
 	return dc
+}
+
+// readLines reads a whole file into memory
+// and returns a slice of its lines.
+//https://stackoverflow.com/questions/5884154/read-text-file-into-string-array-and-write
+func readLines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
