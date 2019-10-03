@@ -63,15 +63,19 @@ func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
 	fingers := strings.Split(chord, ",")
 	minFret := 99
 	maxFret := 5
-	for stringNumber, finger := range fingers {
+	for _, finger := range fingers {
 		if strings.Contains("xo", finger) {
 			continue
 		}
-		if stringNumber < minFret {
-			minFret = stringNumber
+		fingerNumber, err := strconv.Atoi(finger)
+		if err != nil {
+			panic(err)
 		}
-		if stringNumber > maxFret {
-			maxFret = stringNumber
+		if fingerNumber < minFret {
+			minFret = fingerNumber
+		}
+		if fingerNumber > maxFret {
+			maxFret = fingerNumber
 		}
 	}
 	if maxFret == 5 {
@@ -93,7 +97,7 @@ func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
 		default:
 			fretNumber, err := strconv.Atoi(finger)
 			if err == nil {
-				drawPressedString(dc, float64(stringToUse), fretHeight, fretNumber)
+				drawPressedString(dc, float64(stringToUse), fretHeight, fretNumber-minFret+1)
 			}
 		}
 	}
@@ -101,24 +105,28 @@ func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
 
 func drawFrets(dc *gg.Context, minFret, maxFret int) float64 {
 	fretCount := maxFret - minFret + 1
+	if fretCount < 5 {
+		minFret--
+		fretCount++
+	}
 	fretHeight := (maxY - nutY - 2) / float64(fretCount)
 	for i := 0; i <= fretCount; i++ {
 		dc.SetRGB(redByte, 0, 0)
 		dc.DrawRectangle(firstString, nutY+(fretHeight*float64(i)), (stringSpacing*5)+2, 3)
 		dc.Fill()
 		if i < fretCount {
-			drawFretNumber(dc, i, fretHeight)
+			drawFretNumber(dc, i, fretHeight, minFret)
 		}
 	}
 
 	return fretHeight
 }
 
-func drawFretNumber(dc *gg.Context, fretNumber int, fretHeight float64) {
+func drawFretNumber(dc *gg.Context, fretNumber int, fretHeight float64, minFret int) {
 	if err := dc.LoadFontFace(fontPath, 15); err != nil {
 		panic(err)
 	}
-	fretNumStr := strconv.Itoa(fretNumber + 1)
+	fretNumStr := strconv.Itoa(fretNumber + minFret)
 	x := firstString - 10
 
 	dc.DrawString(fretNumStr, x, nutY+(fretHeight*float64(fretNumber))+20)
