@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/fogleman/gg"
-	_ "github.com/fogleman/gg"
 )
 
 var firstString float64
@@ -26,7 +25,7 @@ func init() {
 	firstString = 15.
 	stringSpacing = 34.
 	redByte = 0.
-	nutY = 25.
+	nutY = 75.
 }
 func main() {
 
@@ -37,13 +36,13 @@ func main() {
 		fmt.Println("Invalid chord " + chord)
 		return
 	}
-	//chordName := strings.Split(chord, ":")[0]
-	drawChord(dc, strings.Split(chord, ":")[1])
+	chordName := strings.Split(chord, ":")[0]
+	drawChord(dc, chord, chordName)
 	dc.SavePNG("out.png")
 
 }
 
-func drawChord(dc *gg.Context, chord string) {
+func drawChord(dc *gg.Context, chord, chordName string) {
 	fingers := strings.Split(chord, ",")
 	minFret := 99
 	maxFret := 5
@@ -63,7 +62,7 @@ func drawChord(dc *gg.Context, chord string) {
 		minFret = 1
 	}
 	fretHeight := drawFrets(dc, minFret, maxFret)
-
+	drawChordName(dc, chordName)
 	for stringNumber, finger := range fingers {
 		switch finger {
 		case "o":
@@ -90,6 +89,19 @@ func drawFrets(dc *gg.Context, minFret, maxFret int) float64 {
 	return fretHeight
 }
 
+func drawChordName(dc *gg.Context, chordName string) {
+	w, _ := dc.MeasureString(chordName)
+	midFret := (float64(width) - (firstString * 2)) / 2
+	midLabel := w / 2
+	x := midFret - midLabel + firstString
+
+	if err := dc.LoadFontFace("fonts/assurant_standard/Assurant-Standard.ttf", 40); err != nil {
+		panic(err)
+	}
+
+	dc.DrawString(chordName, x, (nutY / 2))
+	dc.Fill()
+}
 func drawPressedString(dc *gg.Context, stringNumber, fretHeight float64, fretNumber int) {
 	x := firstString + (stringNumber * stringSpacing) + 1
 	y := (fretHeight * float64(fretNumber)) - (fretHeight / 2)
@@ -108,8 +120,8 @@ func drawOpenString(dc *gg.Context, stringNumber float64) {
 func drawMutedString(dc *gg.Context, stringNumber float64) {
 	x := firstString + (stringNumber * stringSpacing) + 1
 	dc.SetRGB(redByte, 0, 0)
-	dc.DrawLine(x-(stringSpacing/3.8), 4, x+(stringSpacing/3.8), nutY-4)
-	dc.DrawLine(x-(stringSpacing/3.8), nutY-4, x+(stringSpacing/3.8), 4)
+	dc.DrawLine(x-(stringSpacing/4), nutY-(stringSpacing/2), x+(stringSpacing/4), nutY-4)
+	dc.DrawLine(x-(stringSpacing/4), nutY-4, x+(stringSpacing/4), nutY-(stringSpacing/2))
 	dc.Stroke()
 }
 
