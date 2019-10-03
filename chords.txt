@@ -1,2 +1,4 @@
+TestA:x,o,o,o,x,x
+TestB:o,x,x,x,o,o
 A:x,o,2,2,2,o,o
 D:x,x,o,2,3,2
