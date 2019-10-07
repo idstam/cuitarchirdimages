@@ -35,6 +35,8 @@ func init() {
 }
 func main() {
 
+	doDrawStringNames := false
+	doDrawNoteNames := true
 	chords, err := readLines("chords.txt")
 	if err != nil {
 		panic(err)
@@ -47,22 +49,27 @@ func main() {
 		chordName := strings.Split(chord, ":")[0]
 
 		//Lefty
-		dc := getEmptyDiagram(true)
-		drawChord(dc, strings.Split(chord, ":")[1], chordName, true)
-		dc.SavePNG("chordImages/" + chordName + "_LH.png")
+		dc := getEmptyDiagram(true, doDrawStringNames)
+		drawChord(dc, strings.Split(chord, ":")[1], chordName, true, doDrawNoteNames)
+		path := "chordImages/" + chordName + "_LH.png"
+		dc.SavePNG(path)
 
 		//Righty
-		dc = getEmptyDiagram(false)
-		drawChord(dc, strings.Split(chord, ":")[1], chordName, false)
-		dc.SavePNG("chordImages/" + chordName + "_RH.png")
+		dc = getEmptyDiagram(false, doDrawStringNames)
+		drawChord(dc, strings.Split(chord, ":")[1], chordName, false, doDrawNoteNames)
+		path = "chordImages/" + chordName + "_RH.png"
+		dc.SavePNG(path)
+
 	}
 
 }
 
-func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
+func drawChord(dc *gg.Context, chord, chordName string, isLeft, doDrawNoteNames bool) {
 	fingers := strings.Split(chord, ",")
 	minFret := 99
 	maxFret := 5
+	var err error
+
 	for _, finger := range fingers {
 		if strings.Contains("xo", finger) {
 			continue
@@ -83,6 +90,8 @@ func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
 	}
 	fretHeight := drawFrets(dc, minFret, maxFret)
 	drawChordName(dc, chordName)
+	fretNumber := 0
+
 	for stringNumber, finger := range fingers {
 		stringToUse := stringNumber
 		if isLeft {
@@ -91,14 +100,22 @@ func drawChord(dc *gg.Context, chord, chordName string, isLeft bool) {
 		switch finger {
 		case "o":
 			drawOpenString(dc, float64(stringToUse))
+			fretNumber = 0
 		case "x":
 			drawMutedString(dc, float64(stringToUse))
-
+			fretNumber = -1
 		default:
-			fretNumber, err := strconv.Atoi(finger)
+			fretNumber, err = strconv.Atoi(finger)
 			if err == nil {
 				drawPressedString(dc, float64(stringToUse), fretHeight, fretNumber-minFret+1)
 			}
+		}
+		if doDrawNoteNames {
+			if stringNumber == 6 {
+				panic(fmt.Errorf("Invalid chord:, %s", chordName))
+
+			}
+			drawNoteName(dc, stringToUse, fretNumber, isLeft)
 		}
 	}
 }
@@ -168,6 +185,31 @@ func drawMutedString(dc *gg.Context, stringNumber float64) {
 	dc.Stroke()
 }
 
+func drawNoteName(dc *gg.Context, stringNumber, fret int, isLeft bool) {
+
+	if fret == -1 {
+		return
+	}
+	if err := dc.LoadFontFace(fontPath, 15); err != nil {
+		panic(err)
+	}
+	x := firstString + (float64(stringNumber) * stringSpacing) - 4
+
+	note := Fret[fret][stringNumber]
+	if isLeft {
+		note = reverseNotes(Fret[fret])[stringNumber]
+	}
+	dc.DrawString(note, x, maxY+15)
+	dc.Fill()
+}
+func reverseNotes(chord []string) []string {
+	ret := []string{}
+	for i := len(chord) - 1; i >= 0; i-- {
+		ret = append(ret, chord[i])
+	}
+	return ret
+}
+
 func drawStringName(dc *gg.Context, stringNumber int, isLeft bool) {
 
 	if err := dc.LoadFontFace(fontPath, 15); err != nil {
@@ -182,7 +224,7 @@ func drawStringName(dc *gg.Context, stringNumber int, isLeft bool) {
 	dc.Fill()
 }
 
-func getEmptyDiagram(isLeft bool) *gg.Context {
+func getEmptyDiagram(isLeft, doDrawStringNames bool) *gg.Context {
 
 	dc := gg.NewContext(width, height)
 	//Background
@@ -205,7 +247,9 @@ func getEmptyDiagram(isLeft bool) *gg.Context {
 		dc.DrawRectangle(stringX, nutY, 2, maxY-nutY)
 		dc.Fill()
 		stringX = stringX + stringSpacing
-		drawStringName(dc, i, isLeft)
+		if doDrawStringNames {
+			drawStringName(dc, i, isLeft)
+		}
 	}
 
 	return dc
