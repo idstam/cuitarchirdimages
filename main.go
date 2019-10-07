@@ -19,6 +19,7 @@ var height int
 var maxX float64
 var maxY float64
 var fontPath string
+var watermark string
 
 func init() {
 	width = 200
@@ -32,6 +33,7 @@ func init() {
 	//fontPath = "fonts/assurant_standard/Assurant-Standard.ttf"
 	//fontPath = "fonts/dealerplate_california/dealerplate california.ttf"
 	fontPath = "fonts/techna_sans/TechnaSans-Regular.ttf"
+	//watermark = "©Johan Idstam"
 }
 func main() {
 
@@ -49,12 +51,14 @@ func main() {
 		chordName := strings.Split(chord, ":")[0]
 
 		//Lefty
+		watermark = "left handed"
 		dc := getEmptyDiagram(true, doDrawStringNames)
 		drawChord(dc, strings.Split(chord, ":")[1], chordName, true, doDrawNoteNames)
 		path := "chordImages/" + chordName + "_LH.png"
 		dc.SavePNG(path)
 
 		//Righty
+		watermark = "right handed"
 		dc = getEmptyDiagram(false, doDrawStringNames)
 		drawChord(dc, strings.Split(chord, ":")[1], chordName, false, doDrawNoteNames)
 		path = "chordImages/" + chordName + "_RH.png"
@@ -154,12 +158,27 @@ func drawChordName(dc *gg.Context, chordName string) {
 		panic(err)
 	}
 	w, _ := dc.MeasureString(chordName)
-	midFret := (float64(width) - (firstString * 2)) / 2
+	midFret := float64(width) / 2
 	midLabel := w / 2
 	x := midFret - midLabel
 
 	dc.DrawString(chordName, x, (nutY / 2))
 	dc.Fill()
+
+	dc.SetRGB(.5, .5, .5)
+	if err := dc.LoadFontFace(fontPath, 14); err != nil {
+		panic(err)
+	}
+
+	chordName = watermark
+	w, _ = dc.MeasureString(chordName)
+	midFret = float64(width) / 2
+	midLabel = w / 2
+	x = midFret - midLabel
+
+	dc.DrawString(chordName, x, (nutY/2)+12)
+	dc.Fill()
+	dc.SetRGB(redByte, 0, 0)
 }
 
 func drawPressedString(dc *gg.Context, stringNumber, fretHeight float64, fretNumber int) {
@@ -237,7 +256,7 @@ func getEmptyDiagram(isLeft, doDrawStringNames bool) *gg.Context {
 	stringX := firstString
 	thickE := 4.
 	if isLeft {
-		dc.DrawRectangle(stringX+(stringSpacing*5)-thickE, nutY, thickE, maxY-nutY)
+		dc.DrawRectangle(stringX+(stringSpacing*5)-(thickE/3), nutY, thickE, maxY-nutY)
 	} else {
 		dc.DrawRectangle(stringX, nutY, thickE, maxY-nutY)
 	}
